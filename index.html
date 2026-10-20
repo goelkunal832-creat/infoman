@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Infoman</title>
+<meta name="theme-color" content="#14111f">
+<meta name="description" content="Infoman: a passive reconnaissance dashboard for pentesters. Open ports, CVEs, DNS, certificates, subdomains and security headers from public sources in one view.">
+<meta property="og:title" content="Infoman - Passive Recon Dashboard">
+<meta property="og:description" content="Map a target before you test it. Ports, CVEs, DNS, certs, subdomains and security headers from public sources.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23bd93f9'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%2314111f'%3EI%3C/text%3E%3C/svg%3E">
+
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#14111f;--card:#1c1830;--ink:#e6e0ff;--mute:#9a8fc7;--line:#bd93f9;--soft:#38305c;--red:#bd93f9;--red2:#d6b8ff;--redbg:#271f4a;--shadow:0 0 0 1px rgba(189,147,249,.10),0 0 18px rgba(189,147,249,.07),0 8px 24px rgba(0,0,0,.7);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root[data-theme="light"]{--bg:#f4f0ff;--card:#fbf9ff;--ink:#241a47;--mute:#6b5aa8;--line:#6d3fd1;--soft:#d8cdf5;--red:#6d3fd1;--red2:#5430b0;--redbg:#ebe3ff;--shadow:0 1px 2px rgba(36,26,71,.06),0 6px 18px rgba(36,26,71,.08)}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;min-height:100%;margin:0;-webkit-font-smoothing:antialiased;background-image:radial-gradient(900px 500px at 15% -10%,rgba(189,147,249,.16),transparent 60%),radial-gradient(700px 450px at 100% 0%,rgba(255,121,198,.10),transparent 60%);background-attachment:fixed}
+:root[data-theme="light"] body{background-image:none}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace}
+.card{background:var(--card);border:1px solid var(--soft);border-radius:4px;box-shadow:var(--shadow);transition:box-shadow .2s,transform .2s,border-color .2s}
+.card:hover{border-color:var(--red)}
+.btn{background:var(--red);color:#14111f;border:1px solid var(--red);border-radius:4px;font-weight:700;transition:background .15s,transform .1s,box-shadow .15s}
+:root[data-theme="light"] .btn{color:#fff}
+.btn:hover{background:var(--red2);box-shadow:0 0 16px rgba(189,147,249,.5)}
+:root[data-theme="light"] .btn:hover{box-shadow:none}
+.btn:active{transform:translateY(1px)}.btn:disabled{opacity:.6;cursor:wait}
+.chip{border:1px solid var(--soft);border-radius:4px;padding:2px 10px;font-size:12px;color:var(--mute);transition:all .15s;background:var(--card)}
+.chip:hover{border-color:var(--red);color:var(--red)}
+.tag{border:1px solid var(--soft);border-radius:4px;padding:3px 8px;font-size:12px;background:var(--bg);transition:all .15s}
+.tag:hover{border-color:var(--red);color:var(--red);background:var(--redbg)}
+.badge{border:1px solid var(--soft);border-radius:4px;padding:1px 8px;font-size:12px;font-weight:700;white-space:nowrap}
+.b-crit{background:var(--red);color:#14111f;border-color:var(--red)}
+:root[data-theme="light"] .b-crit{color:#fff}
+.b-warn{background:var(--redbg);color:var(--red);border-color:var(--red)}
+.b-ok{background:transparent;color:var(--mute);border-color:var(--soft);font-weight:500}
+th{font-weight:700;text-align:left;padding:8px 12px;font-size:13px;border-bottom:1px solid var(--soft);color:var(--mute);cursor:pointer;user-select:none}
+td{padding:9px 12px;border-bottom:1px solid var(--soft);font-size:13.5px}
+tbody tr{transition:background .15s}tbody tr:hover{background:var(--redbg)}
+input{background:var(--card)!important;color:var(--ink)}
+input:focus-visible,button:focus-visible,th:focus-visible,a:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.bar{height:3px;background:var(--soft);overflow:hidden;border-radius:2px}.bar>i{display:block;height:100%;background:var(--red);width:0;transition:width .35s ease;box-shadow:0 0 8px var(--red)}
+.log div{opacity:.45;transition:opacity .3s}.log div.on{opacity:1;color:var(--red)}.log div.done{opacity:.8}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;box-shadow:0 0 6px var(--red)}
+.scanning .pulse{animation:p 1s infinite}@keyframes p{50%{opacity:.25}}
+.rise{animation:rise .45s ease both}@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.scroll{overflow-x:auto}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);max-width:90vw;background:var(--ink);color:var(--bg);border-radius:8px;padding:10px 16px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:20}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+.ports-scroll{max-height:280px;overflow-y:auto;border:1px solid var(--soft);border-radius:4px}
+.ports-scroll th{position:sticky;top:0;background:var(--card);z-index:1}
+h1,h2{text-shadow:0 0 14px rgba(189,147,249,.35)}
+:root[data-theme="light"] h1,:root[data-theme="light"] h2{text-shadow:none}
+h1::after{content:'_';margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+:root[data-theme="light"] h1::after{content:''}
+::selection{background:#bd93f9;color:#14111f}
+input::placeholder{color:var(--mute);opacity:.7}
+input{caret-color:var(--red);border:1px solid var(--soft)}
+input:focus{border-color:var(--red);box-shadow:0 0 10px rgba(189,147,249,.35)}
+.b-crit{box-shadow:0 0 8px rgba(189,147,249,.5)}
+:root[data-theme="light"] .b-crit{box-shadow:none}
+pre,.mono{text-shadow:0 0 1px rgba(189,147,249,.35)}
+:root[data-theme="light"] pre,:root[data-theme="light"] .mono{text-shadow:none}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:var(--soft);border-radius:4px}::-webkit-scrollbar-track{background:var(--bg)}
+</style>
+</head>
+<body>
+<div class="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
+
+<header class="flex items-center justify-between py-5">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 rounded grid place-items-center font-bold mono" style="background:var(--red);color:var(--bg);border:1px solid var(--red)">I</div>
+    <span class="font-semibold text-lg tracking-tight mono" style="color:var(--red)">root@infoman:~#</span>
+  </div>
+  <div class="flex items-center gap-3 text-sm" style="color:var(--mute)">
+    <span class="text-xs sm:text-sm">Real passive data</span>
+    <button id="theme" class="chip" aria-label="Toggle theme">Theme</button>
+  </div>
+</header>
+
+<section class="text-center pt-8 pb-8">
+  <h1 class="text-3xl sm:text-5xl font-bold tracking-tight">Map a target before you test it</h1>
+  <p class="mt-3 max-w-xl mx-auto" style="color:var(--mute)">Enter an IP address, domain or URL to see open ports, known CVEs, hosting, certificate, DNS and subdomains from public sources in one view.</p>
+  <form id="f" class="mt-7 max-w-2xl mx-auto flex flex-col sm:flex-row gap-3" autocomplete="off">
+    <input id="t" class="mono flex-1 px-4 py-3.5 text-base rounded-lg card" style="outline:none" placeholder="example.com or 203.0.113.42" aria-label="Target">
+    <button id="go" class="btn px-7 py-3.5 text-base" type="submit">Start scan</button>
+  </form>
+  <p class="mt-3 text-xs max-w-xl mx-auto" style="color:var(--mute)">Passive recon: the target is sent to dns.google, crt.sh, Shodan InternetDB, ipwho.is and MDN Observatory (which makes one normal HTTPS request to the site). This page sends nothing to the target itself.</p>
+  <p id="err" class="mt-3 text-sm min-h-[20px]" style="color:var(--red)"></p>
+  <div class="flex flex-wrap justify-center gap-2 text-sm">
+    <span style="color:var(--mute)">Try:</span>
+    <button class="chip mono" data-ex="example.com">example.com</button>
+    <button class="chip mono" data-ex="scanme.nmap.org">scanme.nmap.org</button>
+    <button class="chip mono" data-ex="45.33.32.156">45.33.32.156</button>
+  </div>
+</section>
+
+<section id="prog" class="card p-5 max-w-2xl mx-auto hidden">
+  <div class="flex items-center justify-between mb-3 text-sm"><span id="pt" class="font-semibold"></span><span id="pp" class="mono" style="color:var(--mute)">0%</span></div>
+  <div class="bar"><i id="pb"></i></div>
+  <div id="log" class="log mono text-[13px] mt-4 space-y-1.5"></div>
+</section>
+
+<section id="res" class="hidden"></section>
+
+<div id="toast" role="status"></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isIP4=s=>/^(\d{1,3}\.){3}\d{1,3}$/.test(s)&&s.split('.').every(n=>+n<256);
+const isIP6=s=>/^[0-9a-f:]+$/i.test(s)&&s.includes('::')?s.split(':').length<=9:/^([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}$/i.test(s);
+const isIP=s=>isIP4(s)||isIP6(s);
+function parse(v){v=v.trim();if(!v)return null;
+  let h=v.replace(/^[a-z][a-z0-9+.-]*:\/\//i,'').split(/[\/?#]/)[0].replace(/^.*@/,'');
+  const m=h.match(/^\[([0-9a-f:]+)\](:\d+)?$/i);if(m)h=m[1];else if(h.split(':').length===2)h=h.split(':')[0];
+  h=h.toLowerCase().replace(/\.$/,'');
+  if(isIP(h))return{host:h,ip:true};
+  if(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(h)&&/[a-z]/.test(h.split('.').pop()))return{host:h,ip:false};return null}
+const baseOf=h=>{const p=h.split('.');return(p.length>2&&p[p.length-1].length===2&&['co','com','org','net','gov','ac','edu'].includes(p[p.length-2]))?p.slice(-3).join('.'):p.slice(-2).join('.')};
+function x6(ip){const[a,b]=ip.split('::'),A=a?a.split(':'):[],B=b?b.split(':'):[],f=ip.includes('::')?Array(8-A.length-B.length).fill('0'):[];return[...A,...f,...B].map(x=>x.padStart(4,'0')).join('')}
+const ptrName=ip=>isIP4(ip)?ip.split('.').reverse().join('.')+'.in-addr.arpa':x6(ip).split('').reverse().join('.')+'.ip6.arpa';
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtDate=d=>`${MON[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+const doh=async(n,t)=>(await fetch('https://dns.google/resolve?name='+encodeURIComponent(n)+'&type='+t,{signal:AbortSignal.timeout(8000)})).json();
+const dq=(n,t)=>doh(n,t).catch(()=>({}));
+const ans=(j,t)=>(j.Answer||[]).filter(x=>x.type===t).map(x=>x.data);
+const txt=j=>ans(j,16).map(x=>x.replace(/^"|"$/g,'').replace(/"\s*"/g,''));
+const jget=async(u,ms=15000)=>{const r=await fetch(u,{signal:AbortSignal.timeout(ms)});if(!r.ok){const e=new Error('HTTP '+r.status);e.status=r.status;throw e}return r.json()};
+const SV={21:['ftp','crit','Cleartext FTP, anonymous login possible'],22:['ssh','ok',''],23:['telnet','crit','Cleartext remote shell'],25:['smtp','ok',''],53:['dns','ok',''],80:['http','ok',''],110:['pop3','warn','Cleartext authentication'],111:['rpcbind','warn','RPC exposed'],135:['msrpc','warn','Windows RPC exposed'],139:['netbios','warn','NetBIOS exposed'],143:['imap','warn','Cleartext unless STARTTLS'],443:['https','ok',''],445:['smb','crit','SMB exposed to the internet'],1433:['mssql','crit','Database exposed'],1521:['oracle','crit','Database exposed'],2375:['docker','crit','Docker API, often unauthenticated'],3306:['mysql','crit','Database exposed'],3389:['rdp','crit','RDP exposed'],5432:['postgresql','warn','Database exposed'],5900:['vnc','crit','VNC exposed'],6379:['redis','crit','Often no authentication'],8080:['http-alt','warn','Alt web port, check admin panels'],8443:['https-alt','ok',''],9200:['elasticsearch','crit','API often unauthenticated'],11211:['memcached','crit','Memcached exposed'],27017:['mongodb','crit','Database exposed']};
+const HD=['Strict-Transport-Security','Content-Security-Policy','X-Frame-Options','X-Content-Type-Options','Referrer-Policy'];
+let D=null,sortK='port',sortD=1;
+const MODS=[
+{k:'dns',l:'Resolving DNS, SPF and DMARC',f:async()=>{
+  if(D.isip){D.ip=D.host;const a=ans(await dq(ptrName(D.host),'PTR'),12)[0];D.ptr=a?a.replace(/\.$/,''):null;if(D.ptr)D.base=baseOf(D.ptr);return}
+  const h=D.host,b=D.base,[A,AA,MX,NS,TX,DM,CA]=await Promise.all([dq(h,'A'),dq(h,'AAAA'),dq(b,'MX'),dq(b,'NS'),dq(b,'TXT'),dq('_dmarc.'+b,'TXT'),dq(b,'CAA')]);
+  const a=ans(A,1),a6=ans(AA,28);D.ip=a[0]||a6[0]||null;if(!D.ip)throw new Error('domain does not resolve');
+  const spf=txt(TX).find(x=>/^v=spf1/i.test(x))||null,dm=txt(DM).find(x=>/^v=DMARC1/i.test(x))||null;
+  D.dns={rec:[['A',a.join(', ')||'-'],['AAAA',a6.join(', ')||'-'],['MX',ans(MX,15).join(' | ')||'none'],['NS',ans(NS,2).join(' | ')||'none'],['CAA',ans(CA,257).join(' | ')||'none'],['SPF',spf||'not set'],['DMARC',dm||'not set'],['DNSSEC',A.AD?'validated':'not validated']],
+    spf:[spf,!spf?'warn':/\+all\b/.test(spf)?'crit':'ok'],dm:[dm,!dm||/p=none/i.test(dm)?'warn':'ok']}}},
+{k:'ports',l:'Reading open ports and CVEs (Shodan InternetDB)',f:async()=>{
+  if(!D.ip)throw new Error('no IP');
+  try{const j=await jget('https://internetdb.shodan.io/'+D.ip);
+    D.ports=(j.ports||[]).sort((a,b)=>a-b).map(p=>{const s=SV[p]||['unknown','ok',''];return{port:p,service:s[0],risk:s[1],note:s[2]}});
+    D.vulns=j.vulns||[];D.cpes=j.cpes||[];D.tags=j.tags||[];D.hn=j.hostnames||[]}
+  catch(e){if(e.status===404){D.ports=[];D.noData=true}else throw e}}},
+{k:'geo',l:'Looking up hosting and ASN (ipwho.is)',f:async()=>{
+  if(!D.ip)throw new Error('no IP');const j=await jget('https://ipwho.is/'+D.ip);if(!j.success)throw new Error(j.message||'lookup failed');D.geo=j}},
+{k:'certs',l:'Reading certificate logs and subdomains (crt.sh)',f:async()=>{
+  const b=D.base;if(!b)throw new Error('no domain (no reverse DNS)');let rows;
+  try{rows=(await jget('https://crt.sh/?q=%25.'+b+'&output=json',22000)).map(c=>({names:String(c.name_value).split('\n').map(n=>n.trim().toLowerCase()),nb:new Date(c.not_before+'Z'),na:new Date(c.not_after+'Z'),ca:(c.issuer_name.match(/O=([^,]+)/)||[])[1]||c.issuer_name,cn:(c.issuer_name.match(/CN=([^,]+)/)||[])[1]||''}))}
+  catch(_){rows=(await jget('https://api.certspotter.com/v1/issuances?domain='+b+'&include_subdomains=true&expand=dns_names&expand=issuer',22000)).map(c=>({names:c.dns_names.map(n=>n.toLowerCase()),nb:new Date(c.not_before),na:new Date(c.not_after),ca:c.issuer.friendly_name||c.issuer.name,cn:''}))}
+  const set=new Set();rows.forEach(r=>r.names.forEach(n=>{n=n.replace(/^\*\./,'');if(n.endsWith('.'+b))set.add(n)}));
+  if(!D.isip){const h=D.host,cov=n=>n===h||(n.startsWith('*.')&&h.endsWith(n.slice(1))&&h.split('.').length===n.split('.').length);
+    const m=rows.filter(r=>r.names.some(cov)).sort((x,y)=>y.na-x.na)[0];
+    D.cert=m?{ca:m.ca,cn:m.cn,from:m.nb,to:m.na,dl:Math.floor((m.na-Date.now())/864e5),san:[...new Set(m.names)].slice(0,8)}:{none:true}}
+  const names=[...set].sort().slice(0,80),out=[];let i=0;D.subTotal=set.size;
+  await Promise.all(Array.from({length:6},async()=>{while(i<names.length){const n=names[i++];let ip='-',live=false;const a=ans(await dq(n,'A'),1)[0];if(a){ip=a;live=true}out.push({name:n,ip,live})}}));
+  D.subs=out.sort((a,b)=>a.name<b.name?-1:1)}},
+{k:'obs',l:'Auditing security headers (MDN Observatory)',f:async()=>{
+  if(D.isip)return;const r=await fetch('https://observatory-api.mdn.mozilla.net/api/v2/scan?host='+encodeURIComponent(D.host),{method:'POST',signal:AbortSignal.timeout(25000)});
+  if(!r.ok)throw new Error('HTTP '+r.status);const o=await r.json();if(o.error)throw new Error(o.error);D.obs=o}}];
+function dnsIssues(){const d=D.dns,o=[];if(!d)return o;
+  if(d.spf[1]==='crit')o.push(['SPF allows any sender (+all)','crit']);
+  if(!d.spf[0])o.push(['No SPF record','warn']);
+  if(!d.dm[0])o.push(['No DMARC record','warn']);else if(d.dm[1]==='warn')o.push(['DMARC is p=none (monitor only)','warn']);
+  return o}
+function risk(){let n=0;(D.ports||[]).forEach(p=>n+=p.risk==='crit'?10:p.risk==='warn'?4:0);
+  n+=Math.min(30,(D.vulns||[]).length*3);const c=D.cert;
+  if(c){if(c.none)n+=10;else if(c.dl<0)n+=15;else if(c.dl<=21)n+=5}
+  if(D.obs){const g=D.obs.grade||'';n+=/^[AB]/.test(g)?0:/^C/.test(g)?4:8}
+  return Math.min(100,n+dnsIssues().length*4)}
+const rb=r=>`<span class="badge ${r==='crit'?'b-crit':r==='warn'?'b-warn':'b-ok'}">${r==='crit'?'Critical':r==='warn'?'Review':'Normal'}</span>`;
+const modErr=k=>D.errs[k]?`<p class="text-sm" style="color:var(--mute)">Could not load: ${esc(D.errs[k])}. A network or CORS block is the usual cause. Retry, or open the file locally.</p>`:'';
+const dl=(rows)=>rows.filter(r=>r[1]).map(([k,v])=>`<div><dt style="color:var(--mute)">${k}</dt><dd class="mono mt-0.5 break-all">${esc(v)}</dd></div>`).join('');
+
+function portsTable(){const o={crit:0,warn:1,ok:2},cols=[['port','Port'],['service','Service'],['risk','Risk'],['note','Note']];
+  const rows=[...D.ports].sort((a,b)=>{const x=sortK==='risk'?o[a.risk]:a[sortK],y=sortK==='risk'?o[b.risk]:b[sortK];return(x>y?1:x<y?-1:0)*sortD});
+  return `<table class="w-full"><thead><tr>${cols.map(([k,l])=>`<th tabindex="0" data-k="${k}" aria-sort="${sortK===k?(sortD>0?'ascending':'descending'):'none'}">${l}${sortK===k?(sortD>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody class="mono">${rows.map(p=>`<tr><td class="font-medium">${p.port}</td><td>${p.service}</td><td>${rb(p.risk)}</td><td class="text-xs" style="color:var(--mute)">${esc(p.note)}</td></tr>`).join('')}</tbody></table>`}
+function bindSort(){document.querySelectorAll('#pw th').forEach(th=>{const f=()=>{const k=th.dataset.k;sortD=sortK===k?-sortD:1;sortK=k;$('#pw').innerHTML=portsTable();bindSort()};th.onclick=f;th.onkeydown=e=>{if(e.key==='Enter')f()}})}
+
+function render(){
+  const crit=(D.ports||[]).filter(p=>p.risk==='crit'),g=D.geo,c=g&&g.connection||{};
+  const alert=crit.length?`<div class="rise card p-4 mb-5 flex gap-3 items-start" style="background:var(--redbg);border-color:var(--red)"><span class="badge b-crit mt-0.5">${crit.length} critical</span><p class="text-sm"><b>Exposed services need attention:</b> <span class="mono">${crit.map(x=>x.port+'/'+x.service).join(', ')}</span>. ${esc(crit[0].note)}.</p></div>`:'';
+  const cdn=(D.tags||[]).includes('cdn')?'<p class="text-sm mb-3" style="color:var(--red)">This IP belongs to a CDN or proxy, so these ports describe the CDN, not the origin server.</p>':'';
+  const portsBody=D.ports?(D.ports.length?`${cdn}<div id="pw" class="scroll ports-scroll">${portsTable()}</div>`:`<p class="text-sm" style="color:var(--mute)">${D.noData?'Shodan InternetDB has no record for this IP: it was not crawled or has no open ports it could see.':'No open ports reported.'}</p>`):modErr('ports');
+  const sw=[...(D.cpes||[]).map(x=>x.replace(/^cpe:\/[a-z]:/,'')),...(D.tags||[])];
+  $('#res').innerHTML=`${alert}<div class="grid gap-5 md:grid-cols-6">
+  <div class="card p-5 md:col-span-6 rise"><div class="flex flex-wrap items-center justify-between gap-3 mb-4"><h2 class="font-semibold text-lg">Target overview</h2><span class="flex items-center gap-2 text-sm"><i class="pulse"></i>Scan complete</span></div>
+    <dl class="grid grid-cols-2 lg:grid-cols-6 gap-4 text-sm">${[['IP address',D.ip||'unresolved'],['Resolved name',D.ptr||(D.hn&&D.hn[0])||D.host],['Network',c.org||c.isp||'n/a'],['Location',g?[g.city,g.country_code].filter(Boolean).join(', ')||'n/a':'n/a'],['Open ports',D.ports?D.ports.length:'n/a'],['Risk score',risk()+'/100']].map(([k,v])=>`<div class="min-w-0"><dt style="color:var(--mute)">${k}</dt><dd class="mono text-[15px] mt-1 break-all font-medium">${esc(v)}</dd></div>`).join('')}</dl></div>
+  <div class="card p-5 md:col-span-4 rise"><div class="flex items-center justify-between mb-1"><h2 class="font-semibold text-lg">Open ports and services</h2><span class="text-sm" style="color:var(--mute)">Click a column to sort</span></div>
+    <p class="text-xs mb-3" style="color:var(--mute)">Passive data from Shodan's last crawl, not a live scan. Service names are inferred from the port number.</p>${portsBody}</div>
+  <div class="card p-5 md:col-span-2 rise"><h2 class="font-semibold text-lg mb-3">Software and tags</h2>${sw.length?`<div class="flex flex-wrap gap-2">${sw.map(t=>`<span class="tag mono">${esc(t)}</span>`).join('')}</div>`:'<p class="text-sm" style="color:var(--mute)">No software fingerprints in the public data.</p>'}</div>
+  ${(D.vulns||[]).length?`<div class="card p-5 md:col-span-6 rise"><h2 class="font-semibold text-lg mb-1">Known CVEs <span class="mono text-sm font-normal" style="color:var(--mute)">${D.vulns.length}</span></h2><p class="text-xs mb-3" style="color:var(--mute)">Matched by Shodan from detected software versions. Verify before reporting, version matches can be false positives.</p><div class="flex flex-wrap gap-2">${D.vulns.map(v=>`<a class="tag mono" target="_blank" rel="noopener noreferrer" href="https://nvd.nist.gov/vuln/detail/${esc(v)}">${esc(v)}</a>`).join('')}</div></div>`:''}
+  <div class="card p-5 md:col-span-3 rise"><h2 class="font-semibold text-lg mb-3">Hosting and network</h2>${g?`<dl class="grid grid-cols-2 gap-4 text-sm">${dl([['ASN',c.asn?'AS'+c.asn:''],['Organisation',c.org],['ISP',c.isp],['Domain',c.domain],['Country',g.country],['Region / city',[g.region,g.city].filter(Boolean).join(' / ')],['Reverse DNS',D.ptr||''],['Shodan hostnames',(D.hn||[]).slice(0,4).join(', ')]])}</dl>`:modErr('geo')}</div>
+  <div class="card p-5 md:col-span-3 rise"><div class="flex items-center justify-between gap-3 mb-3"><h2 class="font-semibold text-lg">Subdomains <span class="mono text-sm font-normal" style="color:var(--mute)">${D.subs?D.subs.length+(D.subTotal>D.subs.length?' of '+D.subTotal:''):''}</span> ${D.subs?'<span class="badge b-ok">real data</span>':''}</h2><input id="sf" class="mono text-sm px-3 py-1.5 rounded-md w-40" style="border:1px solid var(--soft);background:var(--bg);color:var(--ink)" placeholder="Filter" aria-label="Filter subdomains"></div>
+    ${D.errs.certs?modErr('certs'):'<div id="sl" class="max-h-56 overflow-y-auto pr-1 space-y-1"></div>'}</div>
+  <div class="card p-5 md:col-span-6 rise">${certCard()}</div>
+  ${dorkCard()}${extraCards()}</div>`;
+  if(D.subs){subs('');$('#sf').oninput=e=>subs(e.target.value)}else $('#sf').disabled=true;
+  bindSort();bindDorks();bindExtra();
+}
+function certCard(){
+  const hd='<div class="flex flex-wrap items-center justify-between gap-2 mb-4"><h2 class="font-semibold text-lg">SSL/TLS certificate</h2>',n='<p class="text-sm" style="color:var(--mute)">';
+  if(D.isip)return hd+`</div>${n}Certificate lookup needs a domain name. Scan the domain instead of the IP.</p>`;
+  if(D.errs.certs)return hd+'</div>'+modErr('certs');const c=D.cert;
+  if(!c||c.none)return hd+`<span class="badge b-warn">Not found</span></div>${n}No certificate covering ${esc(D.host)} appears in public CT logs. The site may not use HTTPS.</p>`;
+  const ex=c.dl<0,soon=!ex&&c.dl<=21,pc=Math.max(0,Math.min(100,Math.round((1-c.dl/90)*100)));
+  const is=[];if(ex)is.push(['Certificate expired','crit',`Expired ${fmtDate(c.to)}, ${Math.abs(c.dl)} days ago.`]);else if(soon)is.push(['Expiring soon','warn',`Only ${c.dl} days remain.`]);
+  return hd+`<span class="badge ${ex?'b-crit':soon?'b-warn':'b-ok'}">${ex?'Expired':soon?'Expiring soon':'Valid'}</span></div>
+  <div class="grid gap-5 md:grid-cols-3"><dl class="text-sm space-y-3"><div><dt style="color:var(--mute)">Issuer (CA)</dt><dd class="font-medium mt-0.5">${esc(c.ca)}</dd></div><div><dt style="color:var(--mute)">Issuing CA common name</dt><dd class="mono mt-0.5 break-all">${esc(c.cn||'-')}</dd></div></dl>
+  <dl class="text-sm space-y-3"><div><dt style="color:var(--mute)">Valid from</dt><dd class="mono mt-0.5">${fmtDate(c.from)}</dd></div><div><dt style="color:var(--mute)">Valid to</dt><dd class="mono mt-0.5">${fmtDate(c.to)}</dd></div><div><dt style="color:var(--mute)">Days remaining</dt><dd class="mt-0.5 font-medium">${ex?'Expired '+Math.abs(c.dl)+' days ago':c.dl+' days'}</dd><div class="bar mt-2"><i style="width:${pc}%"></i></div></div></dl>
+  <div><div style="color:var(--mute)" class="text-sm mb-1.5">Subject alternative names</div><div class="flex flex-wrap gap-1.5 mb-4">${c.san.map(s=>`<span class="tag mono">${esc(s)}</span>`).join('')}</div>${is.map(([t,r,d])=>`<div class="p-2 rounded-md text-xs" style="border:1px solid var(--soft)"><div class="flex items-center gap-2 mb-1">${rb(r)}<span class="font-semibold">${t}</span></div><p style="color:var(--mute)">${d}</p></div>`).join('')}</div></div>
+  <p class="text-xs mt-4" style="color:var(--mute)">Source: certificate transparency logs. This is the newest logged certificate covering the host and may differ from the one served right now.</p>`}
+function dorks(){const h=D.host,S=D.isip?`"${h}"`:`site:${h}`,b=D.isip?`"${h}"`:`"${D.base}"`;return[
+['Confidential documents',`${S} (ext:pdf OR ext:docx OR ext:xlsx) (intext:"confidential" OR intext:"internal use only")`],
+['Database dumps and backups',`${S} (ext:sql OR ext:db OR ext:bak OR ext:zip OR ext:tar.gz)`],
+['Config and environment files',`${S} (ext:env OR ext:ini OR ext:conf OR ext:yml OR ext:cfg)`],
+['Credentials in logs and text',`${S} (ext:log OR ext:txt) (intext:"password" OR intext:"api_key" OR intext:"secret")`],
+['Exposed Git repositories',`${S} inurl:".git" intitle:"index of"`],
+['Code and paste site leaks',`${b} (site:github.com OR site:gitlab.com OR site:pastebin.com) (password OR secret OR token)`],
+['Open directory listings',`${S} intitle:"index of /"`],
+['Admin and login pages',`${S} (inurl:admin OR inurl:login OR inurl:portal)`],
+['Error messages and stack traces',`${S} (intext:"sql syntax near" OR intext:"stack trace" OR intext:"Warning: mysql")`],
+['phpinfo and debug pages',`${S} (intitle:phpinfo OR inurl:debug OR inurl:test.php)`],
+['Cloud storage buckets',`${b} (site:s3.amazonaws.com OR site:blob.core.windows.net OR site:storage.googleapis.com)`]]}
+function dorkCard(){const h=D.host,start=D.isip?`"${h}" `:`site:${h} `;
+  return `<div class="card p-5 md:col-span-6 rise" id="dk"><h2 class="font-semibold text-lg mb-1">Google dorking</h2>
+  <p class="text-sm mb-4" style="color:var(--mute)">Ready-made queries for this target. Open one on Google to see real results. Only test targets you are authorized to assess.</p>
+  <div class="flex flex-col sm:flex-row gap-2 mb-4"><input id="cd" class="mono flex-1 text-sm px-3 py-2 rounded-md" style="border:1px solid var(--line);background:var(--bg);color:var(--ink)" value="${esc(start)}" aria-label="Custom dork"><button class="btn px-4 py-2 text-sm" data-act="run">Search on Google</button><button class="chip" data-act="copy">Copy</button></div>
+  <div class="grid gap-3 md:grid-cols-2">${dorks().map(([t,q])=>`<div class="p-3 rounded-lg" style="border:1px solid var(--soft)"><div class="font-semibold text-sm mb-2">${t}</div><div class="mono text-[12.5px] p-2 rounded-md break-all" style="background:var(--bg);border:1px solid var(--soft)">${esc(q)}</div><div class="flex gap-2 mt-2"><button class="chip" data-act="run" data-q="${esc(q)}">Search on Google</button><button class="chip" data-act="copy" data-q="${esc(q)}">Copy</button></div></div>`).join('')}</div></div>`}
+function bindDorks(){const dk=$('#dk');dk.onclick=e=>{const b=e.target.closest('[data-act]');if(!b)return;const q=b.dataset.q!==undefined?b.dataset.q:$('#cd').value.trim();if(!q)return toast('Enter a query first');b.dataset.act==='run'?openExt('https://www.google.com/search?q='+encodeURIComponent(q)):copyTxt(q,'Query copied')}}
+function extraCards(){
+  const R=risk(),lab=R>=60?'High':R>=30?'Medium':'Low',di=dnsIssues(),h=D.host,o=D.obs,dom=D.base||h;
+  const pp=D.ports&&D.ports.length?'-p '+D.ports.map(p=>p.port).join(','):'--top-ports 1000';
+  const cmds=[['Service and version scan',`nmap -sV -sC ${pp} ${h}`],['Full TCP sweep',`nmap -p- -T4 --min-rate 1000 ${h}`],['Vulnerability scripts',`nmap --script vuln ${pp} ${h}`],['TLS audit',`sslscan ${h}:443`],['Web fingerprint',`whatweb -a 3 https://${h}`],['Directory discovery',`gobuster dir -u https://${h} -w /usr/share/wordlists/dirb/common.txt`],['Subdomain enumeration',`subfinder -d ${dom} -silent`]];
+  const row='display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--soft)';
+  const hdr=D.isip?'<p class="text-sm" style="color:var(--mute)">Header audit needs a domain name.</p>':o?`<div class="flex items-end gap-4 mb-3"><div class="mono text-4xl font-bold">${esc(o.grade||'?')}</div><div class="text-sm" style="color:var(--mute)">Score ${esc(o.score??'?')}/100 · ${esc(o.tests_passed??'?')} passed · ${esc(o.tests_failed??'?')} failed</div></div>${o.tests?`<div class="mono text-[12.5px]">${Object.entries(o.tests).slice(0,12).map(([k,v])=>`<div style="${row}"><span>${esc(k)}</span><span class="badge ${v&&v.pass?'b-ok':'b-warn'}">${v&&v.pass?'Pass':'Fail'}</span></div>`).join('')}</div>`:''}<a class="chip inline-block mt-3" target="_blank" rel="noopener noreferrer" href="${esc(o.details_url&&/^https:\/\//.test(o.details_url)?o.details_url:'https://developer.mozilla.org/en-US/observatory/analyze?host='+h)}">Full report</a>`:modErr('obs');
+  return `<div id="ex" class="md:col-span-6 grid gap-5 md:grid-cols-6">
+  <div class="card p-5 md:col-span-6 rise"><div class="flex flex-wrap items-center justify-between gap-2 mb-3"><h2 class="font-semibold text-lg">Risk summary</h2><span class="badge ${R>=60?'b-crit':R>=30?'b-warn':'b-ok'}">${lab}</span></div>
+    <div class="flex items-end gap-4"><div class="mono text-4xl font-bold">${R}<span class="text-base" style="color:var(--mute)">/100</span></div><div class="flex-1"><div class="bar"><i style="width:${R}%"></i></div></div></div>
+    <p class="text-sm mt-3" style="color:var(--mute)">A simple heuristic from risky ports, CVEs, certificate state, header grade and DNS issues. Not a substitute for a real assessment.</p></div>
+  <div class="card p-5 md:col-span-3 rise"><h2 class="font-semibold text-lg mb-3">DNS records and mail security</h2>${D.dns?`<div class="mono text-[12.5px] mb-3">${D.dns.rec.map(([k,v])=>`<div style="${row}"><span style="color:var(--mute)">${k}</span><span class="break-all text-right">${esc(v)}</span></div>`).join('')}</div>${di.length?di.map(([t,r])=>`<div class="flex items-center gap-2 text-sm mb-1.5">${rb(r)}<span>${esc(t)}</span></div>`).join(''):'<p class="text-sm" style="color:var(--mute)">No DNS issues detected.</p>'}`:D.isip?'<p class="text-sm" style="color:var(--mute)">DNS and mail records need a domain name.</p>':modErr('dns')}</div>
+  <div class="card p-5 md:col-span-3 rise"><h2 class="font-semibold text-lg mb-3">Security headers (MDN Observatory)</h2>${hdr}</div>
+  <div class="card p-5 md:col-span-6 rise"><h2 class="font-semibold text-lg mb-1">Next-step commands</h2><p class="text-sm mb-4" style="color:var(--mute)">Standard tools, pre-filled for this target. Run them only against systems you are authorized to test.</p>
+    <div class="space-y-2">${cmds.map(([t,c])=>`<div class="p-3 rounded-lg" style="border:1px solid var(--soft)"><div class="flex items-center justify-between gap-2 mb-2"><span class="font-semibold text-sm">${t}</span><button class="chip" data-c="cmd" data-t="${esc(c)}">Copy</button></div><div class="mono text-[12.5px] p-2 rounded-md break-all" style="background:var(--bg);border:1px solid var(--soft)">${esc(c)}</div></div>`).join('')}</div></div></div>`}
+function bindExtra(){const x=$('#ex');x.onclick=e=>{const b=e.target.closest('[data-c="cmd"]');if(b)copyTxt(b.dataset.t)}}
+async function scan(raw){
+  const p=parse(raw),err=$('#err');
+  if(!p){err.textContent='Enter a valid IPv4/IPv6 address, domain or URL, for example example.com or 203.0.113.42.';return}
+  err.textContent='';D={host:p.host,isip:p.ip,base:p.ip?null:baseOf(p.host),ip:null,errs:{}};sortK='port';sortD=1;
+  const go=$('#go'),pr=$('#prog');go.disabled=true;go.textContent='Scanning…';
+  $('#res').classList.add('hidden');pr.classList.remove('hidden');pr.classList.add('scanning');$('#pt').textContent='Scanning '+p.host;
+  $('#log').innerHTML=MODS.map(m=>`<div>› ${m.l}</div>`).join('');
+  const rows=[...document.querySelectorAll('#log div')];let n=0;
+  const run=async i=>{const m=MODS[i];rows[i].className='on';
+    try{await m.f()}catch(e){D.errs[m.k]=(e&&e.message)||'failed'}
+    rows[i].className='done';rows[i].textContent=(D.errs[m.k]?'✗ ':'✓ ')+m.l+(D.errs[m.k]?' ('+D.errs[m.k]+')':'');
+    n++;const pc=Math.round(n/MODS.length*100);$('#pb').style.width=pc+'%';$('#pp').textContent=pc+'%'};
+  await run(0);await Promise.all([1,2,3,4].map(run));
+  const blocked=Object.values(D.errs).filter(m=>/fetch|network|load failed|aborted|timeout/i.test(m)).length;if(blocked>=3)toast('Network requests are blocked here (preview or sandbox). Download the file and open it directly in Chrome or Firefox.');
+  pr.classList.add('hidden');pr.classList.remove('scanning');render();$('#res').classList.remove('hidden');go.disabled=false;go.textContent='Start scan';$('#res').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function subs(q){
+  const l=D.subs.filter(s=>s.name.includes(q.toLowerCase()));
+  $('#sl').innerHTML=l.length?l.map(s=>`<a href="https://${esc(s.name)}" target="_blank" rel="noopener noreferrer" title="Open https://${esc(s.name)} in a new tab" class="tag flex items-center justify-between gap-3 mono"><span class="truncate">${esc(s.name)}</span><span class="flex items-center gap-2 shrink-0" style="color:var(--mute)">${s.ip}<span class="badge ${s.live?'b-warn':'b-ok'}" style="font-family:'IBM Plex Mono'">${s.live?'Live':'No reply'}</span></span></a>`).join(''):'<p class="text-sm" style="color:var(--mute)">No subdomains match that filter. Clear it to see all results.</p>';
+  document.querySelectorAll('#sl a').forEach(a=>a.onclick=e=>{
+    e.preventDefault();const url=a.href,w=window.open(url,'_blank');
+    if(w){w.opener=null;return}
+    const ok=()=>toast('This preview blocks new tabs. URL copied: '+url),no=()=>toast('This preview blocks new tabs. Copy the URL: '+url);
+    try{navigator.clipboard.writeText(url).then(ok,no)}catch(_){no()}
+  });
+}
+function copyTxt(t,ok='Copied to clipboard',no='Copy it manually: '){try{navigator.clipboard.writeText(t).then(()=>toast(ok),()=>toast(no+t))}catch(_){toast(no+t)}}
+function openExt(u){const w=window.open(u,'_blank');if(w){w.opener=null;return}copyTxt(u,'This preview blocks new tabs. Search URL copied.','This preview blocks new tabs. Copy this URL: ')}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),4000)}
+
+$('#f').onsubmit=e=>{e.preventDefault();scan($('#t').value)};
+document.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{$('#t').value=b.dataset.ex;scan(b.dataset.ex)});
+try{if(localStorage.getItem('theme')==='light')document.documentElement.dataset.theme='light'}catch(_){}
+$('#theme').onclick=()=>{const d=document.documentElement;d.dataset.theme=d.dataset.theme==='light'?'':'light';try{localStorage.setItem('theme',d.dataset.theme)}catch(_){}};
+</script>
+</body>
+</html>
